@@ -2,6 +2,20 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment variables (`.env`)
+
+Create React App reads environment variables from `.env*` files at startup.
+
+- **Local setup**: copy `.env.example` to `.env` and update values as needed
+- **Important**: only variables starting with `REACT_APP_` are available in the browser code
+- **After changing `.env`**: restart the dev server (`npm start`)
+
+Example usage in code:
+
+```js
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+```
+
 ## Available Scripts
 
 In the project directory, you can run:
