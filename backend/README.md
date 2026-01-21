@@ -99,6 +99,40 @@ npm run start
 
 ## React Native “thin” integration (no native OIDC yet)
 
+## Architecture flow (sequence)
+
+```text
+React Native App                 System Browser                NestJS BFF                     Okta
+     |                                |                           |                           |
+     | open URL                        |                           |                           |
+     |-------------------------------> | GET /auth/okta/login       |                           |
+     |                                |--------------------------> |                           |
+     |                                |                           |  store state/nonce + app redirect_uri in session
+     |                                |                           |  302 -> Okta authorize URL
+     |                                | <-------------------------|                           |
+     |                                | -------------------------->                           |
+     |                                |             (user signs in, MFA, policies)            |
+     |                                | <--------------------------                           |
+     |                                | GET /auth/okta/callback?code&state                    |
+     |                                |--------------------------> |                           |
+     |                                |                           |  validate state/nonce (session)
+     |                                |                           |  exchange code for tokens
+     |                                |                           |  read claims: sub/email/groups
+     |                                |                           |  create ONE_TIME_CODE (TTL ~ 60s)
+     |                                |                           |  302 -> myapp://auth/callback?code=ONE_TIME_CODE
+     |                                | <-------------------------|                           |
+     | receives deep link (code)       |                           |                           |
+     |-------------------------------> |                           |                           |
+     | POST /auth/mobile/exchange {code}                           |                           |
+     |-----------------------------------------------------------> |                           |
+     |                                |                           |  consume ONE_TIME_CODE (one-time)
+     |                                |                           |  mint app JWT (15m)
+     |                                | <-------------------------|                           |
+     | receives {token}               |                           |                           |
+     | call APIs with Authorization: Bearer <token>               |                           |
+     |----------------------------------------------------------->|                           |
+```
+
 ### Step A: Mobile opens login URL in system browser
 
 Mobile opens (example deep link):
@@ -123,6 +157,8 @@ Important: we **do not** put the JWT in the URL.
 
 Mobile calls:
 
+#### Example: exchange one-time code for app JWT
+
 ```bash
 curl -X POST http://localhost:3000/auth/mobile/exchange \
   -H 'content-type: application/json' \
@@ -133,6 +169,18 @@ Response:
 
 ```json
 { "token": "<your_app_jwt>", "expiresIn": "15m" }
+```
+
+#### Example: call protected APIs with the app JWT
+
+```bash
+curl http://localhost:3000/me \
+  -H 'authorization: Bearer <your_app_jwt>'
+```
+
+```bash
+curl http://localhost:3000/admin/ping \
+  -H 'authorization: Bearer <your_app_jwt>'
 ```
 
 ---
