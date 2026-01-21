@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { REQUIRE_GROUPS_KEY } from '../decorators/require-groups.decorator';
-import type { AppJwtUser } from './app-jwt.guard';
+import type { AppJwtRequest } from './app-jwt.guard';
 
 @Injectable()
 export class RequireGroupsGuard implements CanActivate {
@@ -22,7 +22,7 @@ export class RequireGroupsGuard implements CanActivate {
     if (!required || required.length === 0) return true;
 
     const req = context.switchToHttp().getRequest<Request>();
-    const user = (req as any).user as AppJwtUser | undefined;
+    const user = (req as Partial<AppJwtRequest>).user;
 
     const groups = user?.groups ?? [];
     const hasAny = required.some((g) => groups.includes(g));
@@ -32,4 +32,3 @@ export class RequireGroupsGuard implements CanActivate {
     return true;
   }
 }
-

@@ -5,4 +5,3 @@ export class MobileExchangeDto {
   @IsNotEmpty()
   code!: string;
 }
-

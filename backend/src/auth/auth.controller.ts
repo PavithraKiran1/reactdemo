@@ -16,6 +16,12 @@ import { OktaOidcService } from './okta/okta-oidc.service';
 import { OneTimeCodeService } from './one-time-code/one-time-code.service';
 import { MobileExchangeDto } from './dto/mobile-exchange.dto';
 
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v));
+  if (typeof value === 'string' && value.length > 0) return [value];
+  return [];
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -31,7 +37,10 @@ export class AuthController {
    */
   @Get('okta/login')
   async oktaLogin(@Req() req: Request, @Res() res: Response) {
-    const redirectUri = (req.query.redirect_uri as string | undefined)?.trim();
+    const redirectUri =
+      typeof req.query.redirect_uri === 'string'
+        ? req.query.redirect_uri.trim()
+        : undefined;
     if (!redirectUri) {
       throw new BadRequestException('Missing redirect_uri');
     }
@@ -44,8 +53,7 @@ export class AuthController {
     req.session.oktaRedirectUri = redirectUri;
 
     const scope =
-      this.config.get<string>('OKTA_SCOPES') ??
-      'openid profile email groups';
+      this.config.get<string>('OKTA_SCOPES') ?? 'openid profile email groups';
 
     const client = await this.okta.getClient();
     const url = client.authorizationUrl({
@@ -83,26 +91,24 @@ export class AuthController {
     const client = await this.okta.getClient();
     const params = client.callbackParams(req);
 
-    let claims: any;
+    let claims: Record<string, unknown>;
     try {
       const tokenSet = await client.callback(oktaRedirectUri, params, {
         state,
         nonce,
       });
-      claims = tokenSet.claims();
+      claims = tokenSet.claims() as Record<string, unknown>;
     } catch {
       throw new UnauthorizedException('OIDC callback validation failed');
     }
 
-    const sub = String(claims?.sub ?? '');
+    const sub = typeof claims.sub === 'string' ? claims.sub : '';
     if (!sub) {
       throw new UnauthorizedException('Missing subject claim');
     }
 
-    const email = typeof claims?.email === 'string' ? claims.email : undefined;
-    const groups = Array.isArray(claims?.groups)
-      ? claims.groups.map(String)
-      : [];
+    const email = typeof claims.email === 'string' ? claims.email : undefined;
+    const groups = asStringArray(claims.groups);
 
     const ttlSeconds = Number(
       this.config.get<string>('ONE_TIME_CODE_TTL_SECONDS') ?? '60',
@@ -128,18 +134,19 @@ export class AuthController {
       throw new UnauthorizedException('Invalid or expired code');
     }
 
-    const expiresIn =
-      this.config.get<string>('APP_JWT_EXPIRES_IN') ?? '15m';
+    const expiresIn = this.config.get<string>('APP_JWT_EXPIRES_IN') ?? '15m';
 
-    const token = await this.jwt.signAsync({
-      sub: payload.sub,
-      email: payload.email,
-      groups: payload.groups,
-    }, {
-      expiresIn,
-    });
+    const token = await this.jwt.signAsync(
+      {
+        sub: payload.sub,
+        email: payload.email,
+        groups: payload.groups,
+      },
+      {
+        expiresIn,
+      },
+    );
 
     return { token, expiresIn };
   }
 }
-

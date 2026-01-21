@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Issuer, type Client, type IssuerMetadata } from 'openid-client';
+import type { Client } from 'openid-client';
 
 @Injectable()
 export class OktaOidcService {
@@ -27,7 +27,10 @@ export class OktaOidcService {
       );
     }
 
-    const issuer: Issuer<IssuerMetadata> = await Issuer.discover(issuerUrl);
+    // Dynamic import keeps Jest (CJS) from choking on openid-client's ESM build
+    // unless you actually call this method.
+    const { Issuer } = (await import('openid-client')) as typeof import('openid-client');
+    const issuer = await Issuer.discover(issuerUrl);
 
     return new issuer.Client({
       client_id: clientId,
@@ -37,4 +40,3 @@ export class OktaOidcService {
     });
   }
 }
-

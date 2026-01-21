@@ -36,4 +36,3 @@ import { RequireGroupsGuard } from './guards/require-groups.guard';
   ],
 })
 export class AuthModule {}
-

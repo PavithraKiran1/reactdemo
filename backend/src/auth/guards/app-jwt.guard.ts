@@ -13,6 +13,8 @@ export type AppJwtUser = {
   groups: string[];
 };
 
+export type AppJwtRequest = Request & { user: AppJwtUser };
+
 @Injectable()
 export class AppJwtAuthGuard implements CanActivate {
   constructor(private readonly jwt: JwtService) {}
@@ -28,11 +30,10 @@ export class AppJwtAuthGuard implements CanActivate {
     const token = auth.slice('Bearer '.length).trim();
     try {
       const payload = await this.jwt.verifyAsync<AppJwtUser>(token);
-      (req as any).user = payload;
+      (req as AppJwtRequest).user = payload;
       return true;
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
   }
 }
-

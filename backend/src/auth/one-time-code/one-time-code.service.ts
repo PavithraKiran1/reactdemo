@@ -37,4 +37,3 @@ export class OneTimeCodeService {
     return stored.payload;
   }
 }
-

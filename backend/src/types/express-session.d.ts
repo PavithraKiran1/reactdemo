@@ -7,4 +7,3 @@ declare module 'express-session' {
     oktaRedirectUri?: string;
   }
 }
-
