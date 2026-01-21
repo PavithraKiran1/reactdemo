@@ -133,6 +133,64 @@ React Native App                 System Browser                NestJS BFF       
      |----------------------------------------------------------->|                           |
 ```
 
+---
+
+## React Native flow (Okta hosted page first + NestJS session table)
+
+This is the flow where React Native opens the **Okta hosted sign-in web page first**, with Okta configured to redirect to the **NestJS callback URL** (`OKTA_REDIRECT_URI`).
+
+### Step 0: RN creates a pending auth session (API call #1)
+
+```bash
+curl -X POST http://localhost:3000/auth/mobile/start \
+  -H 'content-type: application/json' \
+  -d '{"loginHint":"user@company.com"}'
+```
+
+Response:
+
+```json
+{ "authorizeUrl": "<OKTA_AUTHORIZE_URL>", "state": "<STATE>" }
+```
+
+### Step 1: RN opens the Okta hosted sign-in page
+
+Open the returned `authorizeUrl` in a **WebView** (or in-app browser that lets you observe navigation).
+
+### Step 2: Okta redirects to NestJS callback (RN captures the event)
+
+Okta will navigate to:
+
+```text
+https://api.company.com/auth/okta/callback?code=...&state=<STATE>
+```
+
+At this moment, NestJS exchanges the code with Okta, mints the internal JWT, and stores it in the DB session table for this `state`.
+
+RN should detect that navigation (e.g. WebView `onShouldStartLoadWithRequest`) and close the WebView.
+
+### Step 3: RN exchanges `state` for the internal app JWT (API call #2)
+
+```bash
+curl -X POST http://localhost:3000/auth/mobile/session/exchange \
+  -H 'content-type: application/json' \
+  -d '{"state":"<STATE>"}'
+```
+
+Response:
+
+```json
+{ "token": "<your_app_jwt>", "expiresIn": "15m" }
+```
+
+### DB session table (dev)
+
+This repo uses SQLite for dev/testing:
+
+- `DB_SQLITE_PATH=auth.sqlite`
+
+Production note: use Postgres/MySQL + encrypt/hash stored tokens as needed.
+
 ### Step A: Mobile opens login URL in system browser
 
 Mobile opens (example deep link):
