@@ -80,6 +80,22 @@ Copy env example and fill in values:
 cp .env.example .env
 ```
 
+### 2a) (Optional but recommended) Run Redis locally for session persistence
+
+If you set `REDIS_URL`, the backend stores `express-session` data in Redis (recommended for production-like behavior).
+
+Start Redis via Docker:
+
+```bash
+docker run --name okta-bff-redis -p 6379:6379 -d redis:7-alpine
+```
+
+Then set:
+
+```bash
+REDIS_URL=redis://localhost:6379
+```
+
 Required variables (see `.env.example`):
 
 - `SESSION_SECRET`
