@@ -203,6 +203,56 @@ curl http://localhost:3000/admin/ping \
 
 ---
 
+## External login (no Okta account) — Email OTP (Option 2)
+
+This is a second login method for users who do **not** have an Okta account. It still mints the **same internal app JWT**, so your existing guards/authorization keep working.
+
+### How it works
+
+1. Client calls `POST /auth/external/request-otp` with an email
+2. Backend generates an OTP and stores it with TTL (Redis if `REDIS_URL` is set; otherwise in-memory dev fallback)
+3. Backend sends the OTP email (**placeholder** implementation—replace with SES/SendGrid/etc.)
+4. Client calls `POST /auth/external/verify-otp` with email + code
+5. Backend verifies OTP (one-time use) and returns `{ token, expiresIn }`
+
+### Endpoints
+
+#### Request OTP
+
+```bash
+curl -X POST http://localhost:3000/auth/external/request-otp \
+  -H 'content-type: application/json' \
+  -d '{"email":"user@example.com"}'
+```
+
+In development (`NODE_ENV != production`), the response includes `devCode` for testing:
+
+```json
+{ "sent": true, "devCode": "123456" }
+```
+
+#### Verify OTP + mint internal JWT
+
+```bash
+curl -X POST http://localhost:3000/auth/external/verify-otp \
+  -H 'content-type: application/json' \
+  -d '{"email":"user@example.com","code":"123456"}'
+```
+
+Response:
+
+```json
+{ "token": "<your_app_jwt>", "expiresIn": "15m" }
+```
+
+### Groups/roles for external users (DB placeholder)
+
+External users don’t receive Okta `groups`, so the backend currently assigns groups from:
+
+- `EXTERNAL_DEFAULT_GROUPS` (comma-separated), e.g. `APP_EXTERNAL,APP_BASIC`
+
+Replace `backend/src/auth/external/external-user.service.ts` with a real DB-backed lookup when you’re ready.
+
 ## Authorization model (groups)
 
 - **Authentication** (login/MFA/policies): Okta (triggered via redirects)

@@ -6,6 +6,10 @@ import { OktaOidcService } from './okta/okta-oidc.service';
 import { OneTimeCodeService } from './one-time-code/one-time-code.service';
 import { AppJwtAuthGuard } from './guards/app-jwt.guard';
 import { RequireGroupsGuard } from './guards/require-groups.guard';
+import { ExternalOtpService } from './external/external-otp.service';
+import { ExternalUserService } from './external/external-user.service';
+import { ExternalAuthService } from './external/external-auth.service';
+import { EmailSenderService } from './external/email-sender.service';
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { RequireGroupsGuard } from './guards/require-groups.guard';
   providers: [
     OktaOidcService,
     OneTimeCodeService,
+    ExternalOtpService,
+    ExternalUserService,
+    EmailSenderService,
+    ExternalAuthService,
     AppJwtAuthGuard,
     RequireGroupsGuard,
   ],
@@ -31,6 +39,10 @@ import { RequireGroupsGuard } from './guards/require-groups.guard';
     JwtModule,
     OktaOidcService,
     OneTimeCodeService,
+    ExternalOtpService,
+    ExternalUserService,
+    EmailSenderService,
+    ExternalAuthService,
     AppJwtAuthGuard,
     RequireGroupsGuard,
   ],

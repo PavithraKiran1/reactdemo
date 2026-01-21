@@ -15,6 +15,9 @@ import { randomBytes } from 'crypto';
 import { OktaOidcService } from './okta/okta-oidc.service';
 import { OneTimeCodeService } from './one-time-code/one-time-code.service';
 import { MobileExchangeDto } from './dto/mobile-exchange.dto';
+import { ExternalAuthService } from './external/external-auth.service';
+import { ExternalRequestOtpDto } from './dto/external-request-otp.dto';
+import { ExternalVerifyOtpDto } from './dto/external-verify-otp.dto';
 
 function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((v) => String(v));
@@ -27,6 +30,7 @@ export class AuthController {
   constructor(
     private readonly okta: OktaOidcService,
     private readonly otc: OneTimeCodeService,
+    private readonly externalAuth: ExternalAuthService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
   ) {}
@@ -148,5 +152,23 @@ export class AuthController {
     );
 
     return { token, expiresIn };
+  }
+
+  /**
+   * External users (no Okta account): request an email OTP.
+   * Placeholder email sender is used; in dev it can return devCode for testing.
+   */
+  @Post('external/request-otp')
+  async externalRequestOtp(@Body() body: ExternalRequestOtpDto) {
+    const result = await this.externalAuth.requestOtp(body.email);
+    return { sent: true, ...result };
+  }
+
+  /**
+   * External users: verify email OTP and mint the same internal app JWT.
+   */
+  @Post('external/verify-otp')
+  async externalVerifyOtp(@Body() body: ExternalVerifyOtpDto) {
+    return await this.externalAuth.verifyOtpAndMintJwt(body.email, body.code);
   }
 }
