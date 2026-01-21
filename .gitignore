@@ -14,8 +14,6 @@
 **/dist
 backend/dist
 backend/node_modules
-backend/*.sqlite
-backend/*.sqlite3
 
 # misc
 .DS_Store

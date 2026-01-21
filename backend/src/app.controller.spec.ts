@@ -20,7 +20,7 @@ describe('AppController', () => {
         {
           provide: JwtService,
           useValue: {
-            verifyAsync: async () => ({
+            verifyAsync: () => ({
               sub: 'test',
               email: 'test@example.com',
               groups: [],

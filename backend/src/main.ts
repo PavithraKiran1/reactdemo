@@ -3,6 +3,8 @@ import { AppModule } from './app.module';
 import * as session from 'express-session';
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { createClient } from 'redis';
+import RedisStore from 'connect-redis';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -13,11 +15,26 @@ async function bootstrap() {
     app.set('trust proxy', 1);
   }
 
+  // Session persistence:
+  // - If REDIS_URL is provided, sessions are stored in Redis (recommended for production).
+  // - Otherwise, express-session falls back to in-memory MemoryStore (dev only).
+  const redisUrl = process.env.REDIS_URL;
+  let store: session.Store | undefined;
+  if (redisUrl) {
+    const redisClient = createClient({ url: redisUrl });
+    await redisClient.connect();
+    store = new RedisStore({
+      client: redisClient,
+      prefix: 'sess:',
+    });
+  }
+
   app.use(
     session({
       secret: process.env.SESSION_SECRET ?? 'dev_session_secret_change_me',
       resave: false,
       saveUninitialized: false,
+      store,
       cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

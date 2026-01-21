@@ -29,7 +29,7 @@ export class OktaOidcService {
 
     // Dynamic import keeps Jest (CJS) from choking on openid-client's ESM build
     // unless you actually call this method.
-    const { Issuer } = (await import('openid-client')) as typeof import('openid-client');
+    const { Issuer } = await import('openid-client');
     const issuer = await Issuer.discover(issuerUrl);
 
     return new issuer.Client({
