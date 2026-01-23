@@ -248,10 +248,24 @@ export class SsciJourneyIdentificationService {
   }
 }
 
+type McpToolResponse = {
+  content: Array<{ type: 'text'; text: string }>;
+  isError?: boolean;
+};
+
+function toToolResponse(data: unknown): McpToolResponse {
+  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+}
+
+function toToolError(message: string): McpToolResponse {
+  return { isError: true, content: [{ type: 'text', text: message }] };
+}
+
 /**
- * MCP tool definition exported as a single object so `McpService` can import and register it.
+ * Ready-to-register MCP tool for SSCI Journey Identification.
+ * Import this object in `McpService` and register directly.
  */
-export const ssciIdentificationJourneyTool = {
+export const ssciIdentificationJourneyMcpTool = {
   name: 'ssci_identification_journey',
   definition: {
     description:
@@ -259,12 +273,15 @@ export const ssciIdentificationJourneyTool = {
     inputSchema: SsciJourneyIdentificationSchema,
     annotations: { readOnlyHint: true, idempotentHint: true },
   },
-  errorMessage: 'ssci_identification_journey failed',
-  execute: async (
-    journeyService: SsciJourneyIdentificationService,
-    input: SsciJourneyIdentificationToolInput,
-  ): Promise<JourneyIdentificationResponse> => {
-    const { headers, ...payload } = input;
-    return journeyService.fetchJourneyIdentification(payload, headers);
-  },
+  handler:
+    (journeyService: SsciJourneyIdentificationService) =>
+    async (input: SsciJourneyIdentificationToolInput): Promise<McpToolResponse> => {
+      try {
+        const { headers, ...payload } = input;
+        const apiRes = await journeyService.fetchJourneyIdentification(payload, headers);
+        return toToolResponse(apiRes);
+      } catch (e: any) {
+        return toToolError(e?.message ?? 'ssci_identification_journey failed');
+      }
+    },
 } as const;

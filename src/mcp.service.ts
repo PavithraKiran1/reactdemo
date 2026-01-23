@@ -7,14 +7,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 
 import {
   SsciJourneyIdentificationService,
-  ssciIdentificationJourneyTool,
+  ssciIdentificationJourneyMcpTool,
 } from './ssci-journey-identification.service';
-import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlTool } from './ssci-retrieve-order-gql.service';
-
-type ToolResponse = {
-  content: Array<{ type: 'text'; text: string }>;
-  isError?: boolean;
-};
+import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './ssci-retrieve-order-gql.service';
 
 type McpSession = {
   server: McpServer;
@@ -98,29 +93,15 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
   private registerTools(server: McpServer): void {
     // ---- SSCI tools ----
     server.registerTool(
-      ssciIdentificationJourneyTool.name,
-      ssciIdentificationJourneyTool.definition,
-      async (input: any) => {
-        try {
-          const apiRes = await ssciIdentificationJourneyTool.execute(this.journey, input);
-          return this.respond(apiRes);
-        } catch (e: any) {
-          return this.respondError(e?.message ?? ssciIdentificationJourneyTool.errorMessage);
-        }
-      },
+      ssciIdentificationJourneyMcpTool.name,
+      ssciIdentificationJourneyMcpTool.definition,
+      ssciIdentificationJourneyMcpTool.handler(this.journey),
     );
 
     server.registerTool(
-      ssciRetrieveOrderGqlTool.name,
-      ssciRetrieveOrderGqlTool.definition,
-      async (input: any) => {
-        try {
-          const apiRes = await ssciRetrieveOrderGqlTool.execute(this.order, input);
-          return this.respond(apiRes);
-        } catch (e: any) {
-          return this.respondError(e?.message ?? ssciRetrieveOrderGqlTool.errorMessage);
-        }
-      },
+      ssciRetrieveOrderGqlMcpTool.name,
+      ssciRetrieveOrderGqlMcpTool.definition,
+      ssciRetrieveOrderGqlMcpTool.handler(this.order),
     );
   }
 
@@ -140,27 +121,6 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     return method === 'initialize';
   }
 
-  private respond(data: unknown): ToolResponse {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(data, null, 2),
-        },
-      ],
-    };
-  }
-
-  private respondError(message: string): ToolResponse {
-    return {
-      isError: true,
-      content: [
-        {
-          type: 'text',
-          text: message,
-        },
-      ],
-    };
-  }
+  // Tool response formatting is handled inside each exported MCP tool.
 }
 

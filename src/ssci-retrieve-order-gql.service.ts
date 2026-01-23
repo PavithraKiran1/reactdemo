@@ -238,10 +238,24 @@ export class SsciRetrieveOrderGqlService {
   }
 }
 
+type McpToolResponse = {
+  content: Array<{ type: 'text'; text: string }>;
+  isError?: boolean;
+};
+
+function toToolResponse(data: unknown): McpToolResponse {
+  return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+}
+
+function toToolError(message: string): McpToolResponse {
+  return { isError: true, content: [{ type: 'text', text: message }] };
+}
+
 /**
- * MCP tool definition exported as a single object so `McpService` can import and register it.
+ * Ready-to-register MCP tool for SSCI Retrieve Order (GraphQL).
+ * Import this object in `McpService` and register directly.
  */
-export const ssciRetrieveOrderGqlTool = {
+export const ssciRetrieveOrderGqlMcpTool = {
   name: 'ssci_retrieve_order_gql',
   definition: {
     description:
@@ -249,12 +263,15 @@ export const ssciRetrieveOrderGqlTool = {
     inputSchema: SsciRetrieveOrderGqlSchema,
     annotations: { readOnlyHint: true, idempotentHint: true },
   },
-  errorMessage: 'ssci_retrieve_order_gql failed',
-  execute: async (
-    orderService: SsciRetrieveOrderGqlService,
-    input: SsciRetrieveOrderGqlToolInput,
-  ): Promise<RetrieveOrderGraphqlResponse> => {
-    const { headers, lastName, recordLocator } = input;
-    return orderService.fetchOrderData({ lastName, recordLocator }, headers);
-  },
+  handler:
+    (orderService: SsciRetrieveOrderGqlService) =>
+    async (input: SsciRetrieveOrderGqlToolInput): Promise<McpToolResponse> => {
+      try {
+        const { headers, lastName, recordLocator } = input;
+        const apiRes = await orderService.fetchOrderData({ lastName, recordLocator }, headers);
+        return toToolResponse(apiRes);
+      } catch (e: any) {
+        return toToolError(e?.message ?? 'ssci_retrieve_order_gql failed');
+      }
+    },
 } as const;
