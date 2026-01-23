@@ -1,20 +1,14 @@
-export const SsciJourneyIdentificationSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['identifier', 'lastName', 'encrypted'],
-  properties: {
-    identifier: { type: 'string', minLength: 1, description: 'Record locator / identifier' },
-    lastName: { type: 'string', minLength: 1 },
-    encrypted: { type: 'boolean' },
-    firstName: { type: ['string', 'null'] },
-    program: { type: ['string', 'null'] },
-    encryptedParameters: { type: ['object', 'array', 'string', 'number', 'boolean', 'null'] },
-    headers: {
-      type: 'object',
-      description:
-        'Optional header overrides (e.g. x-correlation-id, x-transaction-id). Values here override defaults.',
-      additionalProperties: { type: 'string' },
-    },
-  },
-} as const;
+import { z } from 'zod';
+
+export const SsciJourneyIdentificationSchema = z.object({
+  identifier: z.string().min(1).describe('Record locator / identifier'),
+  lastName: z.string().min(1),
+  encrypted: z.boolean(),
+  firstName: z.string().nullable().optional(),
+  program: z.string().nullable().optional(),
+  encryptedParameters: z.unknown().nullable().optional(),
+  headers: z.record(z.string()).optional().describe(
+    'Optional header overrides (e.g. x-correlation-id, x-transaction-id). Values here override defaults.',
+  ),
+});
 

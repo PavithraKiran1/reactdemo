@@ -104,7 +104,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       {
         description:
           'Call SSCI Journey Identification API (POST journey) and return journeys/dictionary.',
-        inputSchema: SsciJourneyIdentificationSchema as unknown as object,
+        inputSchema: SsciJourneyIdentificationSchema,
         annotations: { readOnlyHint: true, idempotentHint: true },
       },
       async ({ headers, ...payload }: any) => {
@@ -125,7 +125,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       {
         description:
           'Call SSCI Retrieve Order GraphQL API (GetOrderData) and return getOrderData payload.',
-        inputSchema: SsciRetrieveOrderGqlSchema as unknown as object,
+        inputSchema: SsciRetrieveOrderGqlSchema,
         annotations: { readOnlyHint: true, idempotentHint: true },
       },
       async ({ lastName, recordLocator, headers }: any) => {
