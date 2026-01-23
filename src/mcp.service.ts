@@ -6,12 +6,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
 import {
+  SsciJourneyIdentificationSchema,
   SsciJourneyIdentificationService,
   type JourneyIdentificationRequestPayload,
 } from './ssci-journey-identification.service';
-import { SsciRetrieveOrderGqlService } from './ssci-retrieve-order-gql.service';
-import { SsciJourneyIdentificationSchema } from './schemas/ssci-journey.schema';
-import { SsciRetrieveOrderGqlSchema } from './schemas/ssci-retrieve-order.schema';
+import { SsciRetrieveOrderGqlSchema, SsciRetrieveOrderGqlService } from './ssci-retrieve-order-gql.service';
 
 type ToolResponse = {
   content: Array<{ type: 'text'; text: string }>;

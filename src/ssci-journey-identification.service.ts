@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { z } from 'zod';
 
 /**
  * SSCI - Journey Identification
@@ -23,6 +24,25 @@ export interface JourneyIdentificationRequestPayload {
   program: string | null;
   encryptedParameters: unknown | null;
 }
+
+/**
+ * MCP tool input schema for `ssci_identification_journey`.
+ * Exported here so MCP can import it directly from the service.
+ */
+export const SsciJourneyIdentificationSchema = z.object({
+  identifier: z.string().min(1).describe('Record locator / identifier'),
+  lastName: z.string().min(1),
+  encrypted: z.boolean(),
+  firstName: z.string().nullable().optional(),
+  program: z.string().nullable().optional(),
+  encryptedParameters: z.unknown().nullable().optional(),
+  headers: z
+    .record(z.string())
+    .optional()
+    .describe(
+      'Optional header overrides (e.g. x-correlation-id, x-transaction-id). Values here override defaults.',
+    ),
+});
 
 export interface JourneyIdentificationResponse {
   journeys: Journey[];
