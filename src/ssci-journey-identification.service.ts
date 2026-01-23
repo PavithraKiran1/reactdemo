@@ -33,9 +33,9 @@ export const SsciJourneyIdentificationSchema = z.object({
   identifier: z.string().min(1).describe('Record locator / identifier'),
   lastName: z.string().min(1),
   encrypted: z.boolean(),
-  firstName: z.string().nullable().optional(),
-  program: z.string().nullable().optional(),
-  encryptedParameters: z.unknown().nullable().optional(),
+  firstName: z.string().nullable(),
+  program: z.string().nullable(),
+  encryptedParameters: z.unknown().nullable(),
   headers: z
     .record(z.string())
     .optional()
@@ -43,6 +43,8 @@ export const SsciJourneyIdentificationSchema = z.object({
       'Optional header overrides (e.g. x-correlation-id, x-transaction-id). Values here override defaults.',
     ),
 });
+
+export type SsciJourneyIdentificationToolInput = z.infer<typeof SsciJourneyIdentificationSchema>;
 
 export interface JourneyIdentificationResponse {
   journeys: Journey[];
@@ -245,3 +247,24 @@ export class SsciJourneyIdentificationService {
     };
   }
 }
+
+/**
+ * MCP tool definition exported as a single object so `McpService` can import and register it.
+ */
+export const ssciIdentificationJourneyTool = {
+  name: 'ssci_identification_journey',
+  definition: {
+    description:
+      'Call SSCI Journey Identification API (POST journey) and return journeys/dictionary.',
+    inputSchema: SsciJourneyIdentificationSchema,
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
+  errorMessage: 'ssci_identification_journey failed',
+  execute: async (
+    journeyService: SsciJourneyIdentificationService,
+    input: SsciJourneyIdentificationToolInput,
+  ): Promise<JourneyIdentificationResponse> => {
+    const { headers, ...payload } = input;
+    return journeyService.fetchJourneyIdentification(payload, headers);
+  },
+} as const;

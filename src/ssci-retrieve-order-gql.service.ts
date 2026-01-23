@@ -36,6 +36,8 @@ export const SsciRetrieveOrderGqlSchema = z.object({
     ),
 });
 
+export type SsciRetrieveOrderGqlToolInput = z.infer<typeof SsciRetrieveOrderGqlSchema>;
+
 export interface RetrieveOrderVariables {
   input: RetrieveOrderInputDto;
 }
@@ -235,3 +237,24 @@ export class SsciRetrieveOrderGqlService {
     };
   }
 }
+
+/**
+ * MCP tool definition exported as a single object so `McpService` can import and register it.
+ */
+export const ssciRetrieveOrderGqlTool = {
+  name: 'ssci_retrieve_order_gql',
+  definition: {
+    description:
+      'Call SSCI Retrieve Order GraphQL API (GetOrderData) and return getOrderData payload.',
+    inputSchema: SsciRetrieveOrderGqlSchema,
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
+  errorMessage: 'ssci_retrieve_order_gql failed',
+  execute: async (
+    orderService: SsciRetrieveOrderGqlService,
+    input: SsciRetrieveOrderGqlToolInput,
+  ): Promise<RetrieveOrderGraphqlResponse> => {
+    const { headers, lastName, recordLocator } = input;
+    return orderService.fetchOrderData({ lastName, recordLocator }, headers);
+  },
+} as const;

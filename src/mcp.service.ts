@@ -6,11 +6,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
 import {
-  SsciJourneyIdentificationSchema,
   SsciJourneyIdentificationService,
-  type JourneyIdentificationRequestPayload,
+  ssciIdentificationJourneyTool,
 } from './ssci-journey-identification.service';
-import { SsciRetrieveOrderGqlSchema, SsciRetrieveOrderGqlService } from './ssci-retrieve-order-gql.service';
+import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlTool } from './ssci-retrieve-order-gql.service';
 
 type ToolResponse = {
   content: Array<{ type: 'text'; text: string }>;
@@ -99,40 +98,27 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
   private registerTools(server: McpServer): void {
     // ---- SSCI tools ----
     server.registerTool(
-      'ssci_identification_journey',
-      {
-        description:
-          'Call SSCI Journey Identification API (POST journey) and return journeys/dictionary.',
-        inputSchema: SsciJourneyIdentificationSchema,
-        annotations: { readOnlyHint: true, idempotentHint: true },
-      },
-      async ({ headers, ...payload }: any) => {
+      ssciIdentificationJourneyTool.name,
+      ssciIdentificationJourneyTool.definition,
+      async (input: any) => {
         try {
-          const apiRes = await this.journey.fetchJourneyIdentification(
-            payload as JourneyIdentificationRequestPayload,
-            headers,
-          );
+          const apiRes = await ssciIdentificationJourneyTool.execute(this.journey, input);
           return this.respond(apiRes);
         } catch (e: any) {
-          return this.respondError(e?.message ?? 'ssci_identification_journey failed');
+          return this.respondError(e?.message ?? ssciIdentificationJourneyTool.errorMessage);
         }
       },
     );
 
     server.registerTool(
-      'ssci_retrieve_order_gql',
-      {
-        description:
-          'Call SSCI Retrieve Order GraphQL API (GetOrderData) and return getOrderData payload.',
-        inputSchema: SsciRetrieveOrderGqlSchema,
-        annotations: { readOnlyHint: true, idempotentHint: true },
-      },
-      async ({ lastName, recordLocator, headers }: any) => {
+      ssciRetrieveOrderGqlTool.name,
+      ssciRetrieveOrderGqlTool.definition,
+      async (input: any) => {
         try {
-          const apiRes = await this.order.fetchOrderData({ lastName, recordLocator }, headers);
+          const apiRes = await ssciRetrieveOrderGqlTool.execute(this.order, input);
           return this.respond(apiRes);
         } catch (e: any) {
-          return this.respondError(e?.message ?? 'ssci_retrieve_order_gql failed');
+          return this.respondError(e?.message ?? ssciRetrieveOrderGqlTool.errorMessage);
         }
       },
     );
