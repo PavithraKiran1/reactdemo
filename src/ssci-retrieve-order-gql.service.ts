@@ -28,12 +28,17 @@ export interface RetrieveOrderInputDto {
 export const SsciRetrieveOrderGqlSchema = z.object({
   lastName: z.string().min(1),
   recordLocator: z.string().min(1),
+  // Avoid z.record(...) because it generates JSON Schema with `propertyNames`,
+  // which OpenAI rejects for function parameters.
   headers: z
-    .record(z.string())
+    .object({
+      'x-correlation-id': z.string().optional(),
+      'x-transaction-id': z.string().optional(),
+      'x-client-application': z.string().optional(),
+      'x-client-channel': z.string().optional(),
+    })
     .optional()
-    .describe(
-      'Optional header overrides (e.g. x-correlation-id, x-transaction-id). Values here override defaults.',
-    ),
+    .describe('Optional header overrides. Values here override defaults.'),
 });
 
 export type SsciRetrieveOrderGqlToolInput = z.infer<typeof SsciRetrieveOrderGqlSchema>;
@@ -220,7 +225,7 @@ export class SsciRetrieveOrderGqlService {
     const response$ = this.httpService.post<RetrieveOrderGraphqlResponse>(
       this.endpointUrl,
       payload,
-      { headers: mergedHeaders },
+      { headers: mergedHeaders, timeout: 55_000 },
     );
 
     const { data } = await firstValueFrom(response$);
@@ -268,7 +273,17 @@ export const ssciRetrieveOrderGqlMcpTool = {
     async (input: SsciRetrieveOrderGqlToolInput): Promise<McpToolResponse> => {
       try {
         const { headers, lastName, recordLocator } = input;
-        const apiRes = await orderService.fetchOrderData({ lastName, recordLocator }, headers);
+        const headerOverrides =
+          headers && typeof headers === 'object'
+            ? (Object.fromEntries(
+                Object.entries(headers).filter(([, v]) => typeof v === 'string' && v.length > 0),
+              ) as Partial<Record<string, string>>)
+            : undefined;
+
+        const apiRes = await orderService.fetchOrderData(
+          { lastName, recordLocator },
+          headerOverrides,
+        );
         return toToolResponse(apiRes);
       } catch (e: any) {
         return toToolError(e?.message ?? 'ssci_retrieve_order_gql failed');

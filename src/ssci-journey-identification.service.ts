@@ -37,24 +37,20 @@ export const SsciJourneyIdentificationSchema = z.object({
   encrypted: z.boolean().optional().default(false),
   firstName: z.string().nullable().optional().default(null),
   program: z.string().nullable().optional().default(null),
-  // Avoid z.unknown() here: it can serialize to an invalid JSON Schema for OpenAI tools.
-  encryptedParameters: z
-    .union([
-      z.record(z.any()),
-      z.array(z.any()),
-      z.string(),
-      z.number(),
-      z.boolean(),
-    ])
-    .nullable()
-    .optional()
-    .default(null),
+  // Keep JSON Schema simple/valid for OpenAI tools.
+  // If you need actual encrypted params later, widen this safely.
+  encryptedParameters: z.null().optional().default(null),
+  // NOTE: We avoid z.record(...) because it generates JSON Schema with `propertyNames`,
+  // which OpenAI rejects for function parameters.
   headers: z
-    .record(z.string())
+    .object({
+      'x-correlation-id': z.string().optional(),
+      'x-transaction-id': z.string().optional(),
+      'x-client-application': z.string().optional(),
+      'x-client-channel': z.string().optional(),
+    })
     .optional()
-    .describe(
-      'Optional header overrides (e.g. x-correlation-id, x-transaction-id). Values here override defaults.',
-    ),
+    .describe('Optional header overrides. Values here override defaults.'),
 });
 
 export type SsciJourneyIdentificationToolInput = z.infer<typeof SsciJourneyIdentificationSchema>;
@@ -239,6 +235,7 @@ export class SsciJourneyIdentificationService {
       payload,
       {
         headers: mergedHeaders,
+        timeout: 55_000,
       },
     );
 
@@ -302,7 +299,14 @@ export const ssciIdentificationJourneyMcpTool = {
           encryptedParameters: payload.encryptedParameters ?? null,
         };
 
-        const apiRes = await journeyService.fetchJourneyIdentification(apiPayload, headers);
+        const headerOverrides =
+          headers && typeof headers === 'object'
+            ? (Object.fromEntries(
+                Object.entries(headers).filter(([, v]) => typeof v === 'string' && v.length > 0),
+              ) as Partial<Record<string, string>>)
+            : undefined;
+
+        const apiRes = await journeyService.fetchJourneyIdentification(apiPayload, headerOverrides);
         return toToolResponse(apiRes);
       } catch (e: any) {
         return toToolError(e?.message ?? 'ssci_identification_journey failed');
