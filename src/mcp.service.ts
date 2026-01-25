@@ -8,8 +8,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import {
   SsciJourneyIdentificationService,
   ssciIdentificationJourneyMcpTool,
-} from './ssci-journey-identification.service';
-import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './ssci-retrieve-order-gql.service';
+} from './tools/retrieve-journey.tool';
+import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './tools/retrieve-order.tool';
 
 type McpSession = {
   server: McpServer;
