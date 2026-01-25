@@ -32,10 +32,23 @@ export interface JourneyIdentificationRequestPayload {
 export const SsciJourneyIdentificationSchema = z.object({
   identifier: z.string().min(1).describe('Record locator / identifier'),
   lastName: z.string().min(1),
-  encrypted: z.boolean(),
-  firstName: z.string().nullable(),
-  program: z.string().nullable(),
-  encryptedParameters: z.unknown().nullable(),
+  // Only `identifier` and `lastName` are required for the tool caller.
+  // Everything else defaults to the upstream-friendly values below.
+  encrypted: z.boolean().optional().default(false),
+  firstName: z.string().nullable().optional().default(null),
+  program: z.string().nullable().optional().default(null),
+  // Avoid z.unknown() here: it can serialize to an invalid JSON Schema for OpenAI tools.
+  encryptedParameters: z
+    .union([
+      z.record(z.any()),
+      z.array(z.any()),
+      z.string(),
+      z.number(),
+      z.boolean(),
+    ])
+    .nullable()
+    .optional()
+    .default(null),
   headers: z
     .record(z.string())
     .optional()
@@ -278,7 +291,18 @@ export const ssciIdentificationJourneyMcpTool = {
     async (input: SsciJourneyIdentificationToolInput): Promise<McpToolResponse> => {
       try {
         const { headers, ...payload } = input;
-        const apiRes = await journeyService.fetchJourneyIdentification(payload, headers);
+
+        // Normalize tool input -> API payload (ensure required keys exist).
+        const apiPayload: JourneyIdentificationRequestPayload = {
+          identifier: payload.identifier,
+          lastName: payload.lastName,
+          encrypted: payload.encrypted ?? false,
+          firstName: payload.firstName ?? null,
+          program: payload.program ?? null,
+          encryptedParameters: payload.encryptedParameters ?? null,
+        };
+
+        const apiRes = await journeyService.fetchJourneyIdentification(apiPayload, headers);
         return toToolResponse(apiRes);
       } catch (e: any) {
         return toToolError(e?.message ?? 'ssci_identification_journey failed');
