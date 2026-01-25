@@ -271,6 +271,59 @@ function toToolError(message: string): McpToolResponse {
   return { isError: true, content: [{ type: 'text', text: message }] };
 }
 
+function isMockEnabled(): boolean {
+  return String(process.env.MOCK_SSCI ?? '').toLowerCase() === 'true';
+}
+
+async function maybeMockDelay(): Promise<void> {
+  const ms = Number(process.env.MOCK_SSCI_DELAY_MS ?? 0);
+  if (Number.isFinite(ms) && ms > 0) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}
+
+function buildMockJourneyResponse(
+  identifier: string,
+  lastName: string,
+): JourneyIdentificationResponse {
+  return {
+    journeys: [
+      {
+        id: `MOCK-${identifier}`,
+        type: 'standalone',
+        isGroupBooking: false,
+        acceptance: { isAccepted: false, isPartial: false, isVoluntaryDeniedBoarding: false },
+        flights: [
+          {
+            id: 'MOCK-FLT-1',
+            marketingAirlineCode: 'EY',
+            marketingFlightNumber: '239',
+            operatingAirlineCode: 'EY',
+            operatingAirlineName: 'ETIHAD AIRWAYS',
+            status: 'scheduled',
+            departure: { locationCode: 'BLR', dateTime: '2026-01-23T22:00:00+05:30' },
+            arrival: { locationCode: 'AUH', dateTime: '2026-01-24T00:35:00+04:00' },
+          },
+        ],
+        travelers: [
+          {
+            id: 'MOCK-TRV-1',
+            passengerTypeCode: 'ADT',
+            names: [{ firstName: 'MOCK', lastName: lastName, title: 'MR', nameType: 'universal' }],
+          },
+        ],
+      },
+    ],
+    journeyDictionary: {
+      airline: { EY: 'ETIHAD AIRWAYS' },
+      aircraft: { MOCK: 'MOCK AIRCRAFT' },
+    },
+    genericEligibilities: [],
+    warnings: [],
+    errors: [],
+  };
+}
+
 /**
  * Ready-to-register MCP tool for SSCI Journey Identification.
  * Import this object in `McpService` and register directly.
@@ -298,6 +351,11 @@ export const ssciIdentificationJourneyMcpTool = {
           program: payload.program ?? null,
           encryptedParameters: payload.encryptedParameters ?? null,
         };
+
+        if (isMockEnabled()) {
+          await maybeMockDelay();
+          return toToolResponse(buildMockJourneyResponse(apiPayload.identifier, apiPayload.lastName));
+        }
 
         const headerOverrides =
           headers && typeof headers === 'object'

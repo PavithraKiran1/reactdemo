@@ -256,6 +256,40 @@ function toToolError(message: string): McpToolResponse {
   return { isError: true, content: [{ type: 'text', text: message }] };
 }
 
+function isMockEnabled(): boolean {
+  return String(process.env.MOCK_SSCI ?? '').toLowerCase() === 'true';
+}
+
+async function maybeMockDelay(): Promise<void> {
+  const ms = Number(process.env.MOCK_SSCI_DELAY_MS ?? 0);
+  if (Number.isFinite(ms) && ms > 0) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}
+
+function buildMockRetrieveOrderResponse(recordLocator: string, lastName: string): RetrieveOrderGraphqlResponse {
+  return {
+    data: {
+      getOrderData: {
+        recordLocator,
+        warnings: null,
+        associateOrderIds: null,
+        travelers: [
+          {
+            id: 'MOCK-PT1',
+            passengerTypeCode: 'ADT',
+            names: [{ firstName: 'MOCK', lastName, title: 'MR', nameType: 'universal', isPreferred: true }],
+          },
+        ],
+        contacts: [],
+        journeys: null,
+        journeyDictionary: null,
+        __typename: 'RetrieveOrderResponseGql',
+      },
+    },
+  };
+}
+
 /**
  * Ready-to-register MCP tool for SSCI Retrieve Order (GraphQL).
  * Import this object in `McpService` and register directly.
@@ -273,6 +307,10 @@ export const ssciRetrieveOrderGqlMcpTool = {
     async (input: SsciRetrieveOrderGqlToolInput): Promise<McpToolResponse> => {
       try {
         const { headers, lastName, recordLocator } = input;
+        if (isMockEnabled()) {
+          await maybeMockDelay();
+          return toToolResponse(buildMockRetrieveOrderResponse(recordLocator, lastName));
+        }
         const headerOverrides =
           headers && typeof headers === 'object'
             ? (Object.fromEntries(
