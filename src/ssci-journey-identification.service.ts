@@ -286,6 +286,9 @@ function buildMockJourneyResponse(
   identifier: string,
   lastName: string,
 ): JourneyIdentificationResponse {
+  const isCheckInOpened =
+    String(process.env.MOCK_SSCI_CHECKIN_OPENED ?? 'true').toLowerCase() === 'true';
+
   return {
     journeys: [
       {
@@ -318,7 +321,14 @@ function buildMockJourneyResponse(
       airline: { EY: 'ETIHAD AIRWAYS' },
       aircraft: { MOCK: 'MOCK AIRCRAFT' },
     },
-    genericEligibilities: [],
+    genericEligibilities: [
+      {
+        eligiblityName: 'isCheckInOpened',
+        isEligible: isCheckInOpened,
+        journeyIds: [`MOCK-${identifier}`],
+        journeyElementIds: null,
+      },
+    ],
     warnings: [],
     errors: [],
   };
