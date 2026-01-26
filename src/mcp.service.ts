@@ -8,6 +8,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import {
   SsciJourneyIdentificationService,
   ssciIdentificationJourneyMcpTool,
+  ssciIdentificationJourneyEligibilityMcpTool,
 } from './tools/retrieve-journey.tool';
 import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './tools/retrieve-order.tool';
 
@@ -96,6 +97,12 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       ssciIdentificationJourneyMcpTool.name,
       ssciIdentificationJourneyMcpTool.definition,
       ssciIdentificationJourneyMcpTool.handler(this.journey),
+    );
+
+    server.registerTool(
+      ssciIdentificationJourneyEligibilityMcpTool.name,
+      ssciIdentificationJourneyEligibilityMcpTool.definition,
+      ssciIdentificationJourneyEligibilityMcpTool.handler(this.journey),
     );
 
     server.registerTool(
