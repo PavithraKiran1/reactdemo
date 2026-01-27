@@ -12,7 +12,11 @@ import {
 } from './tools/retrieve-journey.tool';
 import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './tools/retrieve-order.tool';
 import { SsciProcessCheckinService, ssciProcessCheckinMcpTool } from './tools/process-checkin.tool';
-import { SsciRegulatoryDetailsService, ssciRegulatoryDetailsMcpTool } from './tools/regulatory-details.tool';
+import {
+  SsciRegulatoryDetailsService,
+  ssciRegulatoryDetailsMcpTool,
+  ssciRegulatoryDetailsUpdateMcpTool,
+} from './tools/regulatory-details.tool';
 
 type McpSession = {
   server: McpServer;
@@ -125,6 +129,12 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       ssciRegulatoryDetailsMcpTool.name,
       ssciRegulatoryDetailsMcpTool.definition,
       ssciRegulatoryDetailsMcpTool.handler(this.regulatoryDetails),
+    );
+
+    server.registerTool(
+      ssciRegulatoryDetailsUpdateMcpTool.name,
+      ssciRegulatoryDetailsUpdateMcpTool.definition,
+      ssciRegulatoryDetailsUpdateMcpTool.handler(this.regulatoryDetails),
     );
   }
 

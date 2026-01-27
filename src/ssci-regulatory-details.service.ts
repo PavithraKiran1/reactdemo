@@ -39,6 +39,16 @@ export const SsciRegulatoryDetailsSchema = z.object({
 
 export type SsciRegulatoryDetailsToolInput = z.infer<typeof SsciRegulatoryDetailsSchema>;
 
+export const SsciRegulatoryDetailsUpdateSchema = SsciRegulatoryDetailsSchema.extend({
+  /**
+   * Raw JSON string body to POST.
+   * Example: "{\"travelerId\":\"...\",\"detailsToAdd\":[...],\"detailsToDecline\":[]}"
+   */
+  rawBody: z.string().min(2).describe('Raw JSON string for request body'),
+});
+
+export type SsciRegulatoryDetailsUpdateToolInput = z.infer<typeof SsciRegulatoryDetailsUpdateSchema>;
+
 export interface SsciRegulatoryDetailsResponse {
   [key: string]: unknown;
 }
@@ -58,6 +68,18 @@ export class SsciRegulatoryDetailsService {
 
   constructor(private readonly httpService: HttpService) {}
 
+  private resolveUrl(params: { url?: string; id?: string; travelerId?: string }): string {
+    const url = params.url
+      ? params.url
+      : params.id && params.travelerId
+        ? `${this.baseUrl}/${encodeURIComponent(params.id)}/travelers/${encodeURIComponent(params.travelerId)}`
+        : null;
+    if (!url) {
+      throw new Error('ssci_regulatory_details: provide either url OR (id and travelerId)');
+    }
+    return url;
+  }
+
   async fetchRegulatoryDetails(params: {
     url?: string;
     id?: string;
@@ -69,17 +91,31 @@ export class SsciRegulatoryDetailsService {
       ...(params.headers ?? {}),
     };
 
-    const url = params.url
-      ? params.url
-      : params.id && params.travelerId
-        ? `${this.baseUrl}/${encodeURIComponent(params.id)}/travelers/${encodeURIComponent(params.travelerId)}`
-        : null;
-
-    if (!url) {
-      throw new Error('ssci_regulatory_details: provide either url OR (id and travelerId)');
-    }
+    const url = this.resolveUrl(params);
 
     const response$ = this.httpService.get<SsciRegulatoryDetailsResponse>(url, {
+      headers: mergedHeaders,
+      timeout: 55_000,
+    });
+
+    const { data } = await firstValueFrom(response$);
+    return data;
+  }
+
+  async updateRegulatoryDetails(params: {
+    url?: string;
+    id?: string;
+    travelerId?: string;
+    body: unknown;
+    headers?: Partial<Record<string, string>>;
+  }): Promise<SsciRegulatoryDetailsResponse> {
+    const mergedHeaders: Record<string, string> = {
+      ...this.defaultHeaders,
+      ...(params.headers ?? {}),
+    };
+
+    const url = this.resolveUrl(params);
+    const response$ = this.httpService.post<SsciRegulatoryDetailsResponse>(url, params.body, {
       headers: mergedHeaders,
       timeout: 55_000,
     });
@@ -150,6 +186,58 @@ export const ssciRegulatoryDetailsMcpTool = {
         return toToolResponse(apiRes);
       } catch (e: any) {
         return toToolError(e?.message ?? 'ssci_regulatory_details failed');
+      }
+    },
+} as const;
+
+export const ssciRegulatoryDetailsUpdateMcpTool = {
+  name: 'ssci_regulatory_details_update',
+  definition: {
+    description:
+      'Call SSCI Regulatory Details endpoint (POST) to add/decline traveler regulatory details and return the response.',
+    inputSchema: SsciRegulatoryDetailsUpdateSchema,
+    annotations: { readOnlyHint: false, idempotentHint: false },
+  },
+  handler:
+    (svc: SsciRegulatoryDetailsService) =>
+    async (input: SsciRegulatoryDetailsUpdateToolInput): Promise<McpToolResponse> => {
+      try {
+        const { headers, url, id, travelerId, rawBody } = input;
+
+        let body: unknown;
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          return toToolError('ssci_regulatory_details_update: rawBody must be valid JSON');
+        }
+
+        if (isMockEnabled()) {
+          await maybeMockDelay();
+          return toToolResponse({
+            ok: true,
+            mocked: true,
+            params: { url, id, travelerId },
+            receivedBody: body,
+          });
+        }
+
+        const headerOverrides =
+          headers && typeof headers === 'object'
+            ? (Object.fromEntries(
+                Object.entries(headers).filter(([, v]) => typeof v === 'string' && v.length > 0),
+              ) as Partial<Record<string, string>>)
+            : undefined;
+
+        const apiRes = await svc.updateRegulatoryDetails({
+          url,
+          id,
+          travelerId,
+          body,
+          headers: headerOverrides,
+        });
+        return toToolResponse(apiRes);
+      } catch (e: any) {
+        return toToolError(e?.message ?? 'ssci_regulatory_details_update failed');
       }
     },
 } as const;
