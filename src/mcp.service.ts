@@ -11,6 +11,7 @@ import {
   ssciIdentificationJourneyEligibilityMcpTool,
 } from './tools/retrieve-journey.tool';
 import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './tools/retrieve-order.tool';
+import { SsciProcessCheckinService, ssciProcessCheckinMcpTool } from './tools/process-checkin.tool';
 
 type McpSession = {
   server: McpServer;
@@ -25,6 +26,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly journey: SsciJourneyIdentificationService,
     private readonly order: SsciRetrieveOrderGqlService,
+    private readonly processCheckin: SsciProcessCheckinService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -109,6 +111,12 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       ssciRetrieveOrderGqlMcpTool.name,
       ssciRetrieveOrderGqlMcpTool.definition,
       ssciRetrieveOrderGqlMcpTool.handler(this.order),
+    );
+
+    server.registerTool(
+      ssciProcessCheckinMcpTool.name,
+      ssciProcessCheckinMcpTool.definition,
+      ssciProcessCheckinMcpTool.handler(this.processCheckin),
     );
   }
 
