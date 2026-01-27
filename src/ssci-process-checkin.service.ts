@@ -34,6 +34,14 @@ export const SsciProcessCheckinSchema = z.object({
    */
   resourceId: z.string().min(1).optional().describe('Optional path id appended to base URL'),
   /**
+   * Optional query flag used by /process-check-in/v1/{id}?areSecurityQuestionsAnswered=false|true
+   * Only applied when `url` is not provided (i.e. when building from baseUrl/resourceId).
+   */
+  areSecurityQuestionsAnswered: z
+    .boolean()
+    .optional()
+    .describe('Optional query param appended as areSecurityQuestionsAnswered'),
+  /**
    * Raw JSON string to POST as request body.
    * Example: "{\"recordLocator\":\"75C68C\",\"lastName\":\"TESTK\",...}"
    */
@@ -72,6 +80,7 @@ export class SsciProcessCheckinService {
 
   async processCheckin(
     urlOrResourceId: { url?: string; resourceId?: string },
+    query?: { areSecurityQuestionsAnswered?: boolean },
     body: unknown,
     headers?: Partial<Record<string, string>>,
   ): Promise<SsciProcessCheckinResponse> {
@@ -80,11 +89,19 @@ export class SsciProcessCheckinService {
       ...(headers ?? {}),
     };
 
-    const url = urlOrResourceId.url
+    let url = urlOrResourceId.url
       ? urlOrResourceId.url
       : urlOrResourceId.resourceId
         ? `${this.baseUrl}/${encodeURIComponent(urlOrResourceId.resourceId)}`
         : this.baseUrl;
+
+    // Append query param only when we are building the URL (not when full URL is provided).
+    if (!urlOrResourceId.url && query?.areSecurityQuestionsAnswered !== undefined) {
+      const sep = url.includes('?') ? '&' : '?';
+      url = `${url}${sep}areSecurityQuestionsAnswered=${encodeURIComponent(
+        String(query.areSecurityQuestionsAnswered),
+      )}`;
+    }
 
     const response$ = this.httpService.post<SsciProcessCheckinResponse>(url, body, {
       headers: mergedHeaders,
@@ -134,7 +151,8 @@ function buildMockProcessCheckinResponse(body: unknown): SsciProcessCheckinRespo
 export const ssciProcessCheckinMcpTool = {
   name: 'ssci_process_checkin',
   definition: {
-    description: 'Call SSCI Process Check-in endpoint and return the response.',
+    description:
+      'Call SSCI Process Check-in endpoint and return the response. Supports /process-check-in/v1/{id}?areSecurityQuestionsAnswered=...',
     inputSchema: SsciProcessCheckinSchema,
     annotations: { readOnlyHint: false, idempotentHint: false },
   },
@@ -142,7 +160,7 @@ export const ssciProcessCheckinMcpTool = {
     (svc: SsciProcessCheckinService) =>
     async (input: SsciProcessCheckinToolInput): Promise<McpToolResponse> => {
       try {
-        const { headers, rawBody, url, resourceId } = input;
+        const { headers, rawBody, url, resourceId, areSecurityQuestionsAnswered } = input;
 
         let body: unknown;
         try {
@@ -163,7 +181,12 @@ export const ssciProcessCheckinMcpTool = {
               ) as Partial<Record<string, string>>)
             : undefined;
 
-        const apiRes = await svc.processCheckin({ url, resourceId }, body, headerOverrides);
+        const apiRes = await svc.processCheckin(
+          { url, resourceId },
+          { areSecurityQuestionsAnswered },
+          body,
+          headerOverrides,
+        );
         return toToolResponse(apiRes);
       } catch (e: any) {
         return toToolError(e?.message ?? 'ssci_process_checkin failed');
