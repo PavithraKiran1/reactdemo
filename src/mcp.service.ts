@@ -18,6 +18,10 @@ import {
   ssciRegulatoryDetailsMcpTool,
   ssciRegulatoryDetailsUpdateMcpTool,
 } from './tools/regulatory-details.tool';
+import {
+  SsciRegulatoryContactService,
+  ssciRegulatoryContactUpdateMcpTool,
+} from './tools/regulatory-contact.tool';
 
 type McpSession = {
   server: McpServer;
@@ -35,6 +39,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     private readonly processCheckin: SsciProcessCheckinService,
     private readonly regulatoryDetails: SsciRegulatoryDetailsService,
     private readonly regulatoryDetailsUpdate: SsciRegulatoryDetailsUpdateService,
+    private readonly regulatoryContact: SsciRegulatoryContactService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -137,6 +142,12 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       ssciRegulatoryDetailsUpdateMcpTool.name,
       ssciRegulatoryDetailsUpdateMcpTool.definition,
       ssciRegulatoryDetailsUpdateMcpTool.handler(this.regulatoryDetailsUpdate),
+    );
+
+    server.registerTool(
+      ssciRegulatoryContactUpdateMcpTool.name,
+      ssciRegulatoryContactUpdateMcpTool.definition,
+      ssciRegulatoryContactUpdateMcpTool.handler(this.regulatoryContact),
     );
   }
 
