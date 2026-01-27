@@ -12,6 +12,7 @@ import {
 } from './tools/retrieve-journey.tool';
 import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './tools/retrieve-order.tool';
 import { SsciProcessCheckinService, ssciProcessCheckinMcpTool } from './tools/process-checkin.tool';
+import { SsciRegulatoryDetailsService, ssciRegulatoryDetailsMcpTool } from './tools/regulatory-details.tool';
 
 type McpSession = {
   server: McpServer;
@@ -27,6 +28,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     private readonly journey: SsciJourneyIdentificationService,
     private readonly order: SsciRetrieveOrderGqlService,
     private readonly processCheckin: SsciProcessCheckinService,
+    private readonly regulatoryDetails: SsciRegulatoryDetailsService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -117,6 +119,12 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       ssciProcessCheckinMcpTool.name,
       ssciProcessCheckinMcpTool.definition,
       ssciProcessCheckinMcpTool.handler(this.processCheckin),
+    );
+
+    server.registerTool(
+      ssciRegulatoryDetailsMcpTool.name,
+      ssciRegulatoryDetailsMcpTool.definition,
+      ssciRegulatoryDetailsMcpTool.handler(this.regulatoryDetails),
     );
   }
 
