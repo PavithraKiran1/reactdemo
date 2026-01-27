@@ -14,6 +14,7 @@ import { SsciRetrieveOrderGqlService, ssciRetrieveOrderGqlMcpTool } from './tool
 import { SsciProcessCheckinService, ssciProcessCheckinMcpTool } from './tools/process-checkin.tool';
 import {
   SsciRegulatoryDetailsService,
+  SsciRegulatoryDetailsUpdateService,
   ssciRegulatoryDetailsMcpTool,
   ssciRegulatoryDetailsUpdateMcpTool,
 } from './tools/regulatory-details.tool';
@@ -33,6 +34,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     private readonly order: SsciRetrieveOrderGqlService,
     private readonly processCheckin: SsciProcessCheckinService,
     private readonly regulatoryDetails: SsciRegulatoryDetailsService,
+    private readonly regulatoryDetailsUpdate: SsciRegulatoryDetailsUpdateService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -134,7 +136,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     server.registerTool(
       ssciRegulatoryDetailsUpdateMcpTool.name,
       ssciRegulatoryDetailsUpdateMcpTool.definition,
-      ssciRegulatoryDetailsUpdateMcpTool.handler(this.regulatoryDetails),
+      ssciRegulatoryDetailsUpdateMcpTool.handler(this.regulatoryDetailsUpdate),
     );
   }
 

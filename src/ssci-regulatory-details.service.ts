@@ -39,16 +39,6 @@ export const SsciRegulatoryDetailsSchema = z.object({
 
 export type SsciRegulatoryDetailsToolInput = z.infer<typeof SsciRegulatoryDetailsSchema>;
 
-export const SsciRegulatoryDetailsUpdateSchema = SsciRegulatoryDetailsSchema.extend({
-  /**
-   * Raw JSON string body to POST.
-   * Example: "{\"travelerId\":\"...\",\"detailsToAdd\":[...],\"detailsToDecline\":[]}"
-   */
-  rawBody: z.string().min(2).describe('Raw JSON string for request body'),
-});
-
-export type SsciRegulatoryDetailsUpdateToolInput = z.infer<typeof SsciRegulatoryDetailsUpdateSchema>;
-
 export interface SsciRegulatoryDetailsResponse {
   [key: string]: unknown;
 }
@@ -102,27 +92,6 @@ export class SsciRegulatoryDetailsService {
     return data;
   }
 
-  async updateRegulatoryDetails(params: {
-    url?: string;
-    id?: string;
-    travelerId?: string;
-    body: unknown;
-    headers?: Partial<Record<string, string>>;
-  }): Promise<SsciRegulatoryDetailsResponse> {
-    const mergedHeaders: Record<string, string> = {
-      ...this.defaultHeaders,
-      ...(params.headers ?? {}),
-    };
-
-    const url = this.resolveUrl(params);
-    const response$ = this.httpService.post<SsciRegulatoryDetailsResponse>(url, params.body, {
-      headers: mergedHeaders,
-      timeout: 55_000,
-    });
-
-    const { data } = await firstValueFrom(response$);
-    return data;
-  }
 }
 
 type McpToolResponse = {

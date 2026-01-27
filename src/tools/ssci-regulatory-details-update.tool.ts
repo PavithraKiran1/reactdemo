@@ -1,8 +1,8 @@
 import {
   SsciRegulatoryDetailsUpdateSchema,
-  type SsciRegulatoryDetailsService,
+  type SsciRegulatoryDetailsUpdateService,
   type SsciRegulatoryDetailsUpdateToolInput,
-} from '../ssci-regulatory-details.service';
+} from '../ssci-regulatory-details-update.service';
 
 type McpToolResponse = {
   content: Array<{ type: 'text'; text: string }>;
@@ -40,7 +40,7 @@ export const ssciRegulatoryDetailsUpdateMcpTool = {
     annotations: { readOnlyHint: false, idempotentHint: false },
   },
   handler:
-    (svc: SsciRegulatoryDetailsService) =>
+    (svc: SsciRegulatoryDetailsUpdateService) =>
     async (input: SsciRegulatoryDetailsUpdateToolInput): Promise<McpToolResponse> => {
       try {
         const { headers, url, id, travelerId, rawBody } = input;
